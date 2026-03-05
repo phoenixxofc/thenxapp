@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>THENX – Calisthenics Coach</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <h1>THENX</h1>
+      <p>Design your personalized calisthenics journey.</p>
+    </header>
+
+    <main class="app-main">
+      <section id="google-login-card" class="card google-card">
+        <div class="google-inner">
+          <h2>Sign in with Google</h2>
+          <p class="google-subtitle">
+            Connect your Google account, then we’ll set up your THENX calisthenics profile.
+          </p>
+          <button type="button" id="google-login-btn" class="google-btn">
+            <span class="google-icon">G</span>
+            <span>Continue with Google</span>
+          </button>
+          <p class="google-hint">Demo only – no real data is sent.</p>
+        </div>
+      </section>
+
+      <section id="intake-card" class="card hidden">
+        <form id="intake-form">
+          <div class="wizard-header">
+            <h2>Tell me about you</h2>
+            <p class="wizard-subtitle">
+              I’ll ask a few quick questions one‑by‑one to build a realistic 30‑day calisthenics plan.
+            </p>
+            <div id="wizard-progress" class="wizard-progress"></div>
+          </div>
+
+          <div class="wizard-questions">
+            <div class="question" data-id="name">
+              <label>
+                What’s your name?
+                <input type="text" name="name" required />
+              </label>
+              <p class="question-help">This is just to personalize your plan.</p>
+            </div>
+
+            <div class="question" data-id="age">
+              <label>
+                How old are you?
+                <div class="number-with-slider horizontal">
+                  <input
+                    id="age-input"
+                    type="number"
+                    name="age"
+                    min="8"
+                    max="80"
+                    required
+                  />
+                  <input
+                    id="age-slider"
+                    type="range"
+                    min="8"
+                    max="80"
+                    step="1"
+                  />
+                </div>
+              </label>
+              <p class="question-help">
+                Age doesn’t limit progress, but it slightly influences how aggressive we should be with progression.
+              </p>
+            </div>
+
+            <div class="question" data-id="height">
+              <label>
+                What’s your height in cm?
+                <div class="number-with-slider horizontal">
+                  <input
+                    id="height-input"
+                    type="number"
+                    name="height"
+                    min="100"
+                    max="230"
+                    required
+                  />
+                  <input
+                    id="height-slider"
+                    type="range"
+                    min="100"
+                    max="230"
+                    step="1"
+                  />
+                </div>
+              </label>
+              <p class="question-help">
+                Height and weight together help estimate leverage and difficulty for some skills.
+              </p>
+            </div>
+
+            <div class="question" data-id="weight">
+              <label>
+                What’s your current bodyweight in kg?
+                <div class="number-with-slider horizontal">
+                  <input
+                    id="weight-input"
+                    type="number"
+                    name="weight"
+                    min="30"
+                    max="200"
+                    required
+                  />
+                  <input
+                    id="weight-slider"
+                    type="range"
+                    min="30"
+                    max="200"
+                    step="1"
+                  />
+                </div>
+              </label>
+              <p class="question-help">
+                Calisthenics is all about relative strength: strength compared to your bodyweight.
+              </p>
+            </div>
+
+            <div class="question" data-id="activity">
+              <p class="question-title">What best describes your usual day?</p>
+              <div class="choice-row">
+                <label class="choice-chip">
+                  <input type="radio" name="activity" value="sitting-all-day" required />
+                  <span>Sitting all day</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="activity" value="light-movement" />
+                  <span>On feet sometimes</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="activity" value="works-out" />
+                  <span>Works out 3–4x/week</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="activity" value="athlete" />
+                  <span>Athlete / very active</span>
+                </label>
+              </div>
+              <p class="question-help">
+                This helps decide how many days per week your 30‑day plan should use.
+              </p>
+            </div>
+
+            <div class="question" data-id="experience">
+              <p class="question-title">What’s your calisthenics experience level?</p>
+              <div class="choice-row">
+                <label class="choice-chip">
+                  <input type="radio" name="experience" value="beginner" required />
+                  <span>Beginner – just starting out</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="experience" value="intermediate" />
+                  <span>Intermediate – basics are solid</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="experience" value="advanced" />
+                  <span>Advanced – multiple advanced skills</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="experience" value="professional" />
+                  <span>Professional – elite level athlete</span>
+                </label>
+              </div>
+              <p class="question-help">
+                I’ll ask about harder skills only if you choose intermediate, advanced, or professional.
+              </p>
+            </div>
+
+            <div class="question" data-id="pushups">
+              <p class="question-title">How many push‑ups can you do in a row?</p>
+              <div class="choice-row">
+                <label class="choice-chip">
+                  <input type="radio" name="pushups" value="0" required />
+                  <span>0 – I can’t yet</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="pushups" value="1-5" />
+                  <span>1–5</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="pushups" value="10-20" />
+                  <span>10–20</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="pushups" value="20-30" />
+                  <span>20–30</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="pushups" value="30-50" />
+                  <span>30–50</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="pushups" value="50-100" />
+                  <span>50–100</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="pushups" value="skip" />
+                  <span>I don’t know / skip</span>
+                </label>
+              </div>
+              <p class="question-help">
+                Use your best clean set with full range of motion. It’s okay if it’s low – that’s your honest starting point.
+              </p>
+            </div>
+
+            <div class="question" data-id="pullups">
+              <p class="question-title">How many pull‑ups can you do in a row?</p>
+              <div class="choice-row">
+                <label class="choice-chip">
+                  <input type="radio" name="pullups" value="0" required />
+                  <span>0 – I can’t yet</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="pullups" value="1-2" />
+                  <span>1–2</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="pullups" value="6-10" />
+                  <span>6–10</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="pullups" value="10-15" />
+                  <span>10–15</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="pullups" value="15-25" />
+                  <span>15–25</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="pullups" value="25-40" />
+                  <span>25–40</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="pullups" value="skip" />
+                  <span>I don’t know / skip</span>
+                </label>
+              </div>
+              <p class="question-help">
+                Strict reps without kicking. If you’re not sure, just pick “I don’t know / skip”.
+              </p>
+            </div>
+
+            <div class="question" data-id="dips">
+              <p class="question-title">How many parallel‑bar dips can you do in a row?</p>
+              <div class="choice-row">
+                <label class="choice-chip">
+                  <input type="radio" name="dips" value="0" required />
+                  <span>0 – I can’t yet</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="dips" value="1-5" />
+                  <span>1–5</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="dips" value="10-20" />
+                  <span>10–20</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="dips" value="20-30" />
+                  <span>20–30</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="dips" value="30-50" />
+                  <span>30–50</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="dips" value="50-80" />
+                  <span>50–80</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="dips" value="skip" />
+                  <span>I don’t know / skip</span>
+                </label>
+              </div>
+              <p class="question-help">
+                Go as low as is comfortable for your shoulders. If you never do dips, choose “I don’t know / skip”.
+              </p>
+            </div>
+
+            <div class="question" data-id="squats">
+              <p class="question-title">How many bodyweight squats can you do in a row?</p>
+              <div class="choice-row">
+                <label class="choice-chip">
+                  <input type="radio" name="squats" value="0" required />
+                  <span>0 – I can’t yet</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="squats" value="1-20" />
+                  <span>1–20</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="squats" value="40-80" />
+                  <span>40–80</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="squats" value="80-120" />
+                  <span>80–120</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="squats" value="120-200" />
+                  <span>120–200</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="squats" value="200-300" />
+                  <span>200–300</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="squats" value="skip" />
+                  <span>I don’t know / skip</span>
+                </label>
+              </div>
+              <p class="question-help">
+                Count a rep when your hips go at least to knee level. If you’re unsure, choose “I don’t know / skip”.
+              </p>
+            </div>
+
+            <div class="question" data-id="goal">
+              <p class="question-title">What’s your main goal?</p>
+              <div class="choice-row">
+                <label class="choice-chip">
+                  <input type="checkbox" name="goal" value="strength" />
+                  <span>Strength & skills</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="checkbox" name="goal" value="hypertrophy" />
+                  <span>Muscle & aesthetics</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="checkbox" name="goal" value="endurance" />
+                  <span>Endurance & conditioning</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="checkbox" name="goal" value="weight-loss" />
+                  <span>Weight loss & health</span>
+                </label>
+              </div>
+              <p class="question-help">
+                You can select more than one. This tells me whether to push more volume, strength work, or conditioning.
+              </p>
+            </div>
+
+            <div class="question" data-id="hspu" data-min-exp="intermediate">
+              <p class="question-title">Handstand push‑ups – how many strict reps can you do?</p>
+              <div class="choice-row">
+                <label class="choice-chip">
+                  <input type="radio" name="hspu" value="0" />
+                  <span>0 – I can’t yet</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="hspu" value="1-4" />
+                  <span>1–4</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="hspu" value="5-8" />
+                  <span>5–8</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="hspu" value="8-15" />
+                  <span>8–15</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="hspu" value="15-25" />
+                  <span>15–25</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="hspu" value="skip" />
+                  <span>I don’t know / skip</span>
+                </label>
+              </div>
+              <p class="question-help">
+                If you’re still learning them, choose the first range or just “I don’t know / skip”.
+              </p>
+            </div>
+
+            <div class="question" data-id="backLever" data-min-exp="intermediate">
+              <label>
+                Back lever – how many seconds can you hold?
+                <div class="number-with-slider horizontal">
+                  <input
+                    id="backLever-input"
+                    type="number"
+                    name="backLever"
+                    min="0"
+                    max="60"
+                  />
+                  <input
+                    id="backLever-slider"
+                    type="range"
+                    min="0"
+                    max="60"
+                    step="1"
+                  />
+                </div>
+              </label>
+              <p class="question-help">
+                Use your best variation (tuck, advanced tuck, or full). If you don’t have it yet, just put 0.
+              </p>
+            </div>
+
+            <div class="question" data-id="dragonFlag" data-min-exp="intermediate">
+              <p class="question-title">Dragon flag – how many controlled reps can you do?</p>
+              <div class="choice-row">
+                <label class="choice-chip">
+                  <input type="radio" name="dragonFlag" value="0" />
+                  <span>0 – I can’t yet</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="dragonFlag" value="1-4" />
+                  <span>1–4</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="dragonFlag" value="5-8" />
+                  <span>5–8</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="dragonFlag" value="8-12" />
+                  <span>8–12</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="dragonFlag" value="12-20" />
+                  <span>12–20</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="dragonFlag" value="skip" />
+                  <span>I don’t know / skip</span>
+                </label>
+              </div>
+              <p class="question-help">
+                Focus on slow negatives. If you can’t do it yet, choose 0–1 or “I don’t know / skip”.
+              </p>
+            </div>
+
+            <div class="question" data-id="planche" data-min-exp="advanced">
+              <label>
+                Planche – longest clean hold in seconds?
+                <div class="number-with-slider horizontal">
+                  <input
+                    id="planche-input"
+                    type="number"
+                    name="planche"
+                    min="0"
+                    max="60"
+                  />
+                  <input
+                    id="planche-slider"
+                    type="range"
+                    min="0"
+                    max="60"
+                    step="1"
+                  />
+                </div>
+              </label>
+              <p class="question-help">
+                Any variation counts (tuck, advanced tuck, straddle, full). Put 0 if you’re still working toward it.
+              </p>
+            </div>
+
+            <div class="question" data-id="frontLever" data-min-exp="advanced">
+              <label>
+                Front lever – longest clean hold in seconds?
+                <div class="number-with-slider horizontal">
+                  <input
+                    id="frontLever-input"
+                    type="number"
+                    name="frontLever"
+                    min="0"
+                    max="60"
+                  />
+                  <input
+                    id="frontLever-slider"
+                    type="range"
+                    min="0"
+                    max="60"
+                    step="1"
+                  />
+                </div>
+              </label>
+              <p class="question-help">
+                Use your best lever variation, even if it’s tucked. If you don’t have one yet, enter 0.
+              </p>
+            </div>
+
+            <div class="question" data-id="maltese" data-min-exp="professional">
+              <label>
+                Maltese – longest comfortable hold in seconds?
+                <div class="number-with-slider horizontal">
+                  <input
+                    id="maltese-input"
+                    type="number"
+                    name="maltese"
+                    min="0"
+                    max="60"
+                  />
+                  <input
+                    id="maltese-slider"
+                    type="range"
+                    min="0"
+                    max="60"
+                    step="1"
+                  />
+                </div>
+              </label>
+              <p class="question-help">
+                Include floor, rings, or parallettes. If you don’t own the maltese yet, just use 0.
+              </p>
+            </div>
+
+            <div class="question" data-id="oap" data-min-exp="professional">
+              <p class="question-title">One‑arm pull‑ups – how many reps per arm?</p>
+              <div class="choice-row">
+                <label class="choice-chip">
+                  <input type="radio" name="oap" value="0" />
+                  <span>0 – I can’t yet</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="oap" value="1-3" />
+                  <span>1–3</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="oap" value="4-6" />
+                  <span>4–6</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="oap" value="6-10" />
+                  <span>6–10</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="oap" value="10-15" />
+                  <span>10–15</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="oap" value="skip" />
+                  <span>I don’t know / skip</span>
+                </label>
+              </div>
+              <p class="question-help">
+                Count strict, clean reps without kipping. If you only have assisted reps, just pick 0–1 or “I don’t know / skip”.
+              </p>
+            </div>
+
+            <div class="question" data-id="impossibleDip" data-min-exp="professional">
+              <p class="question-title">Impossible dips – how many solid reps can you do?</p>
+              <div class="choice-row">
+                <label class="choice-chip">
+                  <input type="radio" name="impossibleDip" value="0" />
+                  <span>0 – I can’t yet</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="impossibleDip" value="1-4" />
+                  <span>1–4</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="impossibleDip" value="5-8" />
+                  <span>5–8</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="impossibleDip" value="8-12" />
+                  <span>8–12</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="impossibleDip" value="12-20" />
+                  <span>12–20</span>
+                </label>
+                <label class="choice-chip">
+                  <input type="radio" name="impossibleDip" value="skip" />
+                  <span>I don’t know / skip</span>
+                </label>
+              </div>
+              <p class="question-help">
+                These are extremely demanding. If you’re still learning the position, it’s totally fine to skip.
+              </p>
+            </div>
+
+            <div class="question" data-id="weighted" data-min-exp="advanced">
+              <p class="question-title">
+                Have you started weighted calisthenics (weighted pull‑ups, dips, etc.)?
+              </p>
+              <div class="question-options">
+                <label class="inline">
+                  <input type="radio" name="weighted" value="yes" /> Yes
+                </label>
+                <label class="inline">
+                  <input type="radio" name="weighted" value="no" /> Not yet
+                </label>
+              </div>
+              <p class="question-help">
+                This tells me whether to include or just suggest weighted work alongside your skill training.
+              </p>
+            </div>
+          </div>
+
+          <div class="wizard-nav">
+            <button type="button" id="prev-btn" class="secondary-btn" disabled>Back</button>
+            <button type="button" id="next-btn" class="primary-btn">Next</button>
+            <button type="submit" id="submit-btn" class="primary-btn hidden">Generate 30‑Day Plan</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="plan-section" class="card hidden">
+        <h2>Your Personalized 30‑Day Goal</h2>
+        <p id="plan-intro"></p>
+        <ul id="plan-summary" class="plan-summary"></ul>
+        <h3>Weekly Structure</h3>
+        <ul id="weekly-structure" class="plan-summary"></ul>
+        <h3>Skill Focus</h3>
+        <ul id="skill-focus" class="plan-summary"></ul>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <small>Designed for educational purposes. Listen to your body.</small>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
+
