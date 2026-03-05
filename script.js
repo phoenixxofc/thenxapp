@@ -20,37 +20,6 @@ function parseNumber(input) {
   return Number.isFinite(n) && n >= 0 ? n : 0;
 }
 
-function parseJwt(token) {
-  var base64Url = token.split('.')[1];
-  var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-  var jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-  }).join(''));
-  return JSON.parse(jsonPayload);
-}
-
-function handleCredentialResponse(response) {
-  const responsePayload = parseJwt(response.credential);
-  const profile = {
-    name: responsePayload.name,
-    given_name: responsePayload.given_name,
-    email: responsePayload.email,
-    picture: responsePayload.picture
-  };
-  localStorage.setItem("user_profile", JSON.stringify(profile));
-
-  document.getElementById("hero-section").classList.add("hidden");
-  document.getElementById("intake-card").classList.remove("hidden");
-  document.getElementById("intake-card").scrollIntoView({ behavior: "smooth", block: "start" });
-
-  // Initialize wizard and pre-fill name in the answers object
-  if (!wizardInstance) {
-    wizardInstance = new WizardController();
-  }
-  wizardInstance.answers.name = profile.given_name || profile.name;
-  wizardInstance.renderStep();
-}
-
 const QUESTIONS = [
   {
     id: "name",
@@ -454,22 +423,20 @@ class WizardController {
 let wizardInstance;
 
 document.addEventListener("DOMContentLoaded", () => {
+  const getStartedBtn = document.getElementById("get-started-btn");
+  const heroSection = document.getElementById("hero-section");
   const intakeCard = document.getElementById("intake-card");
-  if (intakeCard) {
-    if (!intakeCard.classList.contains("hidden")) {
-      wizardInstance = new WizardController();
-    } else {
-      // Observer for when intake card becomes visible
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          if (mutation.attributeName === "class" && !intakeCard.classList.contains("hidden")) {
-            wizardInstance = new WizardController();
-            observer.disconnect();
-          }
-        });
-      });
-      observer.observe(intakeCard, { attributes: true });
-    }
+
+  if (getStartedBtn) {
+    getStartedBtn.addEventListener("click", () => {
+      heroSection.classList.add("hidden");
+      intakeCard.classList.remove("hidden");
+      intakeCard.scrollIntoView({ behavior: "smooth", block: "start" });
+
+      if (!wizardInstance) {
+        wizardInstance = new WizardController();
+      }
+    });
   }
 
   const form = document.getElementById("intake-form");
@@ -478,7 +445,6 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
 
       const planSection = document.getElementById("plan-section");
-      const intakeCard = document.getElementById("intake-card");
       const loading = document.getElementById("plan-loading");
       const content = document.getElementById("plan-content");
 
