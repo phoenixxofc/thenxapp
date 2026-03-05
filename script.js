@@ -209,20 +209,6 @@ const QUESTIONS = [
     condition: (answers) => answers.main_goal === "hypertrophy",
     help: "More equipment allows for more varied hypertrophy exercises."
   },
-  {
-    id: "training-days",
-    title: "How many days can you train?",
-    type: "choice",
-    name: "training_days",
-    options: [
-      { label: "3 Days", value: "3" },
-      { label: "4 Days", value: "4" },
-      { label: "5 Days", value: "5" },
-      { label: "6 Days", value: "6" }
-    ],
-    required: true,
-    help: "Consistency is more important than frequency."
-  }
 ];
 
 class WizardController {
@@ -369,6 +355,8 @@ class WizardController {
             label.classList.toggle("selected", input.checked);
           }
           this.clearError();
+          this.updateVisibleQuestions();
+          this.updateNav();
         });
       });
       inputContainer.appendChild(choiceRow);
@@ -407,8 +395,12 @@ class WizardController {
   updateNav() {
     this.prevBtn.disabled = this.currentStepIndex === 0;
     const isLast = this.currentStepIndex === this.visibleQuestions.length - 1;
-    this.nextBtn.classList.toggle("hidden", isLast);
-    this.submitBtn.classList.toggle("hidden", !isLast);
+    this.nextBtn.classList.remove("hidden");
+    this.submitBtn.classList.add("hidden");
+    if (isLast) {
+        this.nextBtn.classList.add("hidden");
+        this.submitBtn.classList.remove("hidden");
+    }
   }
 
   validate() {
@@ -424,6 +416,13 @@ class WizardController {
 
     if (question.type === "number-slider") {
       const num = Number(val);
+      // Hard limits logic
+      if (question.name === "weight") {
+        if (num < 20 || num > 250) {
+            this.showError("Please enter a realistic body weight (20kg–250kg)");
+            return false;
+        }
+      }
       if (num < question.min || num > question.max) {
         this.showError(`Please enter a value between ${question.min}–${question.max}`);
         return false;
@@ -470,6 +469,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const dashboardSection = document.getElementById("dashboard-section");
   const intakeCard = document.getElementById("intake-card");
   const start30dayBtn = document.getElementById("start-30day-btn");
+  const recalculateBtn = document.getElementById("recalculate-btn");
   const backToDashboard = document.getElementById("back-to-dashboard");
   const libraryGrid = document.getElementById("workout-library");
   const levelModal = document.getElementById("level-modal");
@@ -478,8 +478,35 @@ document.addEventListener("DOMContentLoaded", () => {
   if (getStartedBtn) {
     getStartedBtn.addEventListener("click", () => {
       heroSection.classList.add("hidden");
-      dashboardSection.classList.remove("hidden");
+      const savedPlan = localStorage.getItem("thx_plan");
+      if (savedPlan) {
+        dashboardSection.classList.remove("hidden");
+        updateDashboardProgress();
+      } else {
+        intakeCard.classList.remove("hidden");
+        if (!wizardInstance) {
+          wizardInstance = new WizardController();
+        }
+      }
     });
+  }
+
+  if (recalculateBtn) {
+    recalculateBtn.onclick = () => {
+      if (confirm("Restart and recalculate your 30-day program? Progress will be saved.")) {
+        localStorage.removeItem("thx_plan");
+        localStorage.removeItem("thx_answers");
+        dashboardSection.classList.add("hidden");
+        intakeCard.classList.remove("hidden");
+        if (wizardInstance) {
+            wizardInstance.currentStepIndex = 0;
+            wizardInstance.answers = {};
+            wizardInstance.renderStep();
+        } else {
+            wizardInstance = new WizardController();
+        }
+      }
+    };
   }
 
   if (start30dayBtn) {
@@ -768,6 +795,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const savedPlan = localStorage.getItem("thx_plan");
   const savedAnswers = localStorage.getItem("thx_answers");
+
   if (savedPlan && savedAnswers) {
     document.getElementById("hero-section").classList.add("hidden");
     document.getElementById("dashboard-section").classList.remove("hidden");
@@ -784,10 +812,14 @@ function updateDashboardProgress() {
   const container = document.getElementById("program-progress-container");
   const fill = document.getElementById("program-progress-fill");
   const text = document.getElementById("program-progress-text");
+  const recalculateBtn = document.getElementById("recalculate-btn");
 
   if (container) {
     container.classList.remove("hidden");
     fill.style.width = `${percentage}%`;
     text.textContent = `${percentage}% Complete`;
+  }
+  if (recalculateBtn) {
+    recalculateBtn.classList.remove("hidden");
   }
 }
