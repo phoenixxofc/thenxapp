@@ -1,25 +1,3 @@
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
-
-function parseNumber(input) {
-  if (input === "skip" || input === "" || input == null) return 0;
-  if (typeof input === "string") {
-    if (input.includes("-")) {
-      const [low, high] = input.split("-").map((v) => Number(v));
-      if (Number.isFinite(low) && Number.isFinite(high)) {
-        return (low + high) / 2;
-      }
-    }
-    if (input.includes("+")) {
-      const val = Number(input.replace("+", ""));
-      return Number.isFinite(val) ? val : 0;
-    }
-  }
-  const n = Number(input);
-  return Number.isFinite(n) && n >= 0 ? n : 0;
-}
-
 const QUESTIONS = [
   {
     id: "name",
@@ -135,6 +113,69 @@ const QUESTIONS = [
     condition: (answers) => answers.main_goal === "strength",
     help: "Strict reps, no kipping."
   },
+  {
+    id: "planche-level",
+    title: "Planche experience?",
+    type: "choice",
+    name: "planche_level",
+    options: [
+      { label: "None", value: "0" },
+      { label: "Planche Leans", value: "1" },
+      { label: "Tuck Planche", value: "2" },
+      { label: "Advanced Tuck", value: "3" },
+      { label: "Straddle", value: "4" }
+    ],
+    required: true,
+    condition: (answers) => (answers.main_goal === "strength" || answers.main_goal === "hypertrophy") && answers.experience !== "beginner",
+    help: "Select your current highest static hold for Planche."
+  },
+  {
+    id: "front-lever-level",
+    title: "Front Lever experience?",
+    type: "choice",
+    name: "front_lever_level",
+    options: [
+      { label: "None", value: "0" },
+      { label: "Tuck Front Lever", value: "1" },
+      { label: "Advanced Tuck", value: "2" },
+      { label: "Straddle", value: "3" },
+      { label: "Full Front Lever", value: "4" }
+    ],
+    required: true,
+    condition: (answers) => (answers.main_goal === "strength" || answers.main_goal === "hypertrophy") && answers.experience !== "beginner",
+    help: "Select your current highest static hold for Front Lever."
+  },
+  {
+    id: "dragon-flag-level",
+    title: "Dragon Flag experience?",
+    type: "choice",
+    name: "dragon_flag_level",
+    options: [
+      { label: "None", value: "0" },
+      { label: "Leg Raises", value: "1" },
+      { label: "Dragon Flag Negatives", value: "2" },
+      { label: "Full Dragon Flag", value: "3" }
+    ],
+    required: true,
+    condition: (answers) => (answers.main_goal === "strength" || answers.main_goal === "hypertrophy") && answers.experience !== "beginner",
+    help: "Select your current proficiency with the Dragon Flag."
+  },
+  {
+    id: "hspu-level",
+    title: "Handstand Push‑up level?",
+    type: "choice",
+    name: "hspu_level",
+    options: [
+      { label: "None", value: "0" },
+      { label: "Pike Push-ups", value: "1" },
+      { label: "Elevated Pike", value: "2" },
+      { label: "Wall HSPU", value: "3" },
+      { label: "Free HSPU", value: "4" }
+    ],
+    required: true,
+    condition: (answers) => (answers.main_goal === "strength" || answers.main_goal === "hypertrophy") && answers.experience !== "beginner",
+    help: "Select your current proficiency with vertical pushing."
+  },
   // Branching for Weight Loss
   {
     id: "cardio-pref",
@@ -203,8 +244,8 @@ class WizardController {
     this.updateVisibleQuestions();
     this.renderStep();
 
-    this.prevBtn.addEventListener("click", () => this.prev());
-    this.nextBtn.addEventListener("click", () => this.next());
+    this.prevBtn.onclick = () => this.prev();
+    this.nextBtn.onclick = () => this.next();
   }
 
   updateVisibleQuestions() {
@@ -261,6 +302,7 @@ class WizardController {
       rangeInput.min = question.min;
       rangeInput.max = question.max;
       rangeInput.value = numInput.value;
+      rangeInput.setAttribute("aria-label", `${question.title} slider`);
 
       sliderContainer.appendChild(numInput);
       sliderContainer.appendChild(rangeInput);
@@ -346,7 +388,6 @@ class WizardController {
 
     this.container.appendChild(questionEl);
 
-    // Focus management
     const firstInput = questionEl.querySelector("input");
     if (firstInput) firstInput.focus();
 
@@ -421,29 +462,78 @@ class WizardController {
 }
 
 let wizardInstance;
+let selectedLibraryWorkout = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   const getStartedBtn = document.getElementById("get-started-btn");
   const heroSection = document.getElementById("hero-section");
+  const dashboardSection = document.getElementById("dashboard-section");
   const intakeCard = document.getElementById("intake-card");
+  const start30dayBtn = document.getElementById("start-30day-btn");
+  const backToDashboard = document.getElementById("back-to-dashboard");
+  const libraryGrid = document.getElementById("workout-library");
+  const levelModal = document.getElementById("level-modal");
+  const closeLevelModal = document.getElementById("close-level-modal");
 
   if (getStartedBtn) {
     getStartedBtn.addEventListener("click", () => {
       heroSection.classList.add("hidden");
-      intakeCard.classList.remove("hidden");
-      intakeCard.scrollIntoView({ behavior: "smooth", block: "start" });
+      dashboardSection.classList.remove("hidden");
+    });
+  }
 
-      if (!wizardInstance) {
-        wizardInstance = new WizardController();
+  if (start30dayBtn) {
+    start30dayBtn.addEventListener("click", () => {
+      const savedPlan = localStorage.getItem("thx_plan");
+      if (savedPlan) {
+        showPlanSection();
+      } else {
+        dashboardSection.classList.add("hidden");
+        intakeCard.classList.remove("hidden");
+        if (!wizardInstance) {
+          wizardInstance = new WizardController();
+        }
       }
     });
   }
+
+  if (backToDashboard) {
+    backToDashboard.addEventListener("click", () => {
+      document.getElementById("plan-section").classList.add("hidden");
+      dashboardSection.classList.remove("hidden");
+      updateDashboardProgress();
+    });
+  }
+
+  // Populate Library
+  Object.keys(EXCLUSIVE_WORKOUTS).forEach(name => {
+    const card = document.createElement("div");
+    card.className = "library-card";
+    card.innerHTML = `<h4>${name}</h4>`;
+    card.onclick = () => {
+      selectedLibraryWorkout = name;
+      levelModal.classList.remove("hidden");
+    };
+    libraryGrid.appendChild(card);
+  });
+
+  if (closeLevelModal) {
+    closeLevelModal.onclick = () => levelModal.classList.add("hidden");
+  }
+
+  document.querySelectorAll(".level-btn").forEach(btn => {
+    btn.onclick = () => {
+      const level = btn.getAttribute("data-level");
+      levelModal.classList.add("hidden");
+      dashboardSection.classList.add("hidden");
+      showLibraryWorkout(selectedLibraryWorkout, level);
+    };
+  });
 
   const form = document.getElementById("intake-form");
   if (form) {
     form.addEventListener("submit", (e) => {
       e.preventDefault();
-
       const planSection = document.getElementById("plan-section");
       const loading = document.getElementById("plan-loading");
       const content = document.getElementById("plan-content");
@@ -457,45 +547,85 @@ document.addEventListener("DOMContentLoaded", () => {
         const plan = generate30DayPlan(wizardInstance.answers);
         localStorage.setItem("thx_plan", JSON.stringify(plan));
         localStorage.setItem("thx_answers", JSON.stringify(wizardInstance.answers));
-
         loading.classList.add("hidden");
         content.classList.remove("hidden");
-
         displayPlan(plan, wizardInstance.answers);
       }, 2000);
     });
   }
 });
 
+function showPlanSection() {
+  const dashboardSection = document.getElementById("dashboard-section");
+  const planSection = document.getElementById("plan-section");
+  dashboardSection.classList.add("hidden");
+  planSection.classList.remove("hidden");
+  const plan = JSON.parse(localStorage.getItem("thx_plan"));
+  const answers = JSON.parse(localStorage.getItem("thx_answers"));
+  displayPlan(plan, answers);
+}
+
+function showLibraryWorkout(name, level) {
+  const planSection = document.getElementById("plan-section");
+  const calendar = document.getElementById("calendar-view");
+  const libraryView = document.getElementById("library-workout-view");
+  const libraryExs = document.getElementById("library-exercises");
+  const intro = document.getElementById("plan-intro");
+
+  planSection.classList.remove("hidden");
+  calendar.classList.add("hidden");
+  libraryView.classList.remove("hidden");
+
+  intro.textContent = `${name} - ${level.toUpperCase()}`;
+  libraryExs.innerHTML = "";
+
+  const exercises = EXCLUSIVE_WORKOUTS[name][level];
+  exercises.forEach(ex => {
+    const exEl = document.createElement("div");
+    exEl.className = "exercise-item";
+    exEl.innerHTML = `
+      <div class="exercise-preview"><div class="preview-animation"></div></div>
+      <div class="exercise-header">
+        <strong>${ex.name}</strong>
+        <span>Target: ${ex.sets}x${ex.reps}</span>
+      </div>
+    `;
+    libraryExs.appendChild(exEl);
+  });
+}
+
+document.getElementById("close-library-workout").onclick = () => {
+  document.getElementById("library-workout-view").classList.add("hidden");
+  document.getElementById("calendar-view").classList.remove("hidden");
+  document.getElementById("plan-section").classList.add("hidden");
+  document.getElementById("dashboard-section").classList.remove("hidden");
+};
+
 function displayPlan(plan, answers) {
   const intro = document.getElementById("plan-intro");
   const calendar = document.getElementById("calendar-view");
+  const libraryView = document.getElementById("library-workout-view");
+
+  calendar.classList.remove("hidden");
+  libraryView.classList.add("hidden");
 
   intro.textContent = `Hello ${answers.name}, here is your custom 30-day ${answers.main_goal} plan. Each week intensity increases.`;
-
   calendar.innerHTML = "";
-
   const completedWorkouts = JSON.parse(localStorage.getItem("thx_completed") || "{}");
 
   plan.forEach(week => {
     week.workouts.forEach(workout => {
-      const dayNum = (week.week - 1) * 7 + workout.day;
+      const dayNum = workout.day;
       const dayCard = document.createElement("div");
       dayCard.className = `day-card ${workout.type === "Rest" ? "rest" : ""}`;
-
-      if (completedWorkouts[dayNum]) {
-        dayCard.classList.add("completed");
-      }
-
+      if (completedWorkouts[dayNum]) dayCard.classList.add("completed");
       dayCard.innerHTML = `
         <div class="day-num">Day ${dayNum}</div>
         <div class="day-type">${workout.type}</div>
       `;
-
       if (workout.type !== "Rest") {
-        dayCard.addEventListener("click", () => openWorkoutModal(workout, dayNum));
+        dayCard.onclick = () => openWorkoutModal(workout, dayNum);
       }
-
       calendar.appendChild(dayCard);
     });
   });
@@ -509,7 +639,6 @@ function openWorkoutModal(workout, dayNum) {
 
   title.textContent = `Day ${dayNum} - ${workout.type}`;
   exerciseContainer.innerHTML = "";
-
   workout.exercises.forEach((ex, idx) => {
     const exEl = document.createElement("div");
     exEl.className = "exercise-item";
@@ -539,30 +668,43 @@ function openWorkoutModal(workout, dayNum) {
     };
     localStorage.setItem("thx_completed", JSON.stringify(completed));
     modal.classList.add("hidden");
-
-    // Refresh plan view
     const plan = JSON.parse(localStorage.getItem("thx_plan"));
     const answers = JSON.parse(localStorage.getItem("thx_answers"));
     displayPlan(plan, answers);
   };
-
   modal.classList.remove("hidden");
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   const closeModal = document.getElementById("close-modal");
   if (closeModal) {
-    closeModal.addEventListener("click", () => {
+    closeModal.onclick = () => {
       document.getElementById("workout-modal").classList.add("hidden");
-    });
+    };
   }
 
-  // Load saved plan if exists
   const savedPlan = localStorage.getItem("thx_plan");
   const savedAnswers = localStorage.getItem("thx_answers");
   if (savedPlan && savedAnswers) {
     document.getElementById("hero-section").classList.add("hidden");
-    document.getElementById("plan-section").classList.remove("hidden");
-    displayPlan(JSON.parse(savedPlan), JSON.parse(savedAnswers));
+    document.getElementById("dashboard-section").classList.remove("hidden");
+    updateDashboardProgress();
   }
 });
+
+function updateDashboardProgress() {
+  const completed = JSON.parse(localStorage.getItem("thx_completed") || "{}");
+  const count = Object.keys(completed).length;
+  const total = 30; // 30-day program
+  const percentage = Math.round((count / total) * 100);
+
+  const container = document.getElementById("program-progress-container");
+  const fill = document.getElementById("program-progress-fill");
+  const text = document.getElementById("program-progress-text");
+
+  if (container) {
+    container.classList.remove("hidden");
+    fill.style.width = `${percentage}%`;
+    text.textContent = `${percentage}% Complete`;
+  }
+}

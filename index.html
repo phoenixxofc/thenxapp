@@ -20,6 +20,34 @@
     </section>
 
     <main class="app-main">
+      <section id="dashboard-section" class="card hidden">
+        <div class="dashboard-header">
+          <h2>Workout Dashboard</h2>
+          <p>Choose your path to elite strength.</p>
+        </div>
+
+        <div class="program-card main-program" id="program-30day">
+          <div class="program-info">
+            <h3>30-Day Personalized Program</h3>
+            <p>A structured plan built specifically for your level and goals.</p>
+            <div id="program-progress-container" class="hidden">
+              <div class="progress-bar-bg">
+                <div id="program-progress-fill" class="progress-bar-fill"></div>
+              </div>
+              <span id="program-progress-text">0% Complete</span>
+            </div>
+          </div>
+          <button type="button" id="start-30day-btn" class="primary-btn">View My Program</button>
+        </div>
+
+        <div class="library-section">
+          <h3>Exclusive Workouts</h3>
+          <div id="workout-library" class="workout-grid">
+            <!-- Exclusive workouts cards -->
+          </div>
+        </div>
+      </section>
+
       <section id="intake-card" class="card hidden">
         <form id="intake-form" novalidate>
           <div class="wizard-header">
@@ -53,21 +81,42 @@
             <p id="plan-intro"></p>
           </div>
 
+          <button type="button" id="back-to-dashboard" class="secondary-btn">Back to Dashboard</button>
+
           <div id="calendar-view" class="calendar-grid">
             <!-- 30 days will be rendered here -->
           </div>
 
-          <div id="workout-modal" class="modal hidden">
-            <div class="modal-content card">
-              <button id="close-modal" class="close-btn">&times;</button>
-              <h2 id="modal-title">Workout</h2>
-              <div id="modal-exercises"></div>
-              <button id="save-workout" class="primary-btn">Complete Workout</button>
-            </div>
+          <div id="library-workout-view" class="hidden">
+             <!-- Single library workout exercises list -->
+             <div id="library-exercises"></div>
+             <button type="button" id="close-library-workout" class="secondary-btn">Close</button>
           </div>
+
         </div>
       </section>
     </main>
+
+    <div id="level-modal" class="modal hidden">
+      <div class="modal-content card">
+        <h3>Select Level</h3>
+        <div class="choice-row">
+          <button type="button" class="level-btn" data-level="beginner">Beginner</button>
+          <button type="button" class="level-btn" data-level="intermediate">Intermediate</button>
+          <button type="button" class="level-btn" data-level="advanced">Advanced</button>
+        </div>
+        <button type="button" id="close-level-modal" class="close-btn">&times;</button>
+      </div>
+    </div>
+
+    <div id="workout-modal" class="modal hidden">
+      <div class="modal-content card">
+        <button type="button" id="close-modal" class="close-btn">&times;</button>
+        <h2 id="modal-title">Workout</h2>
+        <div id="modal-exercises"></div>
+        <button type="button" id="save-workout" class="primary-btn">Complete Workout</button>
+      </div>
+    </div>
 
     <footer class="app-footer">
       <small>Designed for educational purposes. Listen to your body.</small>
