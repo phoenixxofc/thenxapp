@@ -1,492 +1,825 @@
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
+const QUESTIONS = [
+  {
+    id: "name",
+    title: "What’s your name?",
+    type: "text",
+    name: "name",
+    required: true,
+    help: "This is just to personalize your plan."
+  },
+  {
+    id: "age",
+    title: "How old are you?",
+    type: "number-slider",
+    name: "age",
+    min: 8,
+    max: 80,
+    required: true,
+    help: "Age doesn’t limit progress, but it slightly influences how aggressive we should be with progression."
+  },
+  {
+    id: "height",
+    title: "What’s your height in cm?",
+    type: "number-slider",
+    name: "height",
+    min: 100,
+    max: 230,
+    required: true,
+    help: "Height and weight together help estimate leverage and difficulty for some skills."
+  },
+  {
+    id: "weight",
+    title: "What’s your current bodyweight in kg?",
+    type: "number-slider",
+    name: "weight",
+    min: 30,
+    max: 200,
+    required: true,
+    help: "Calisthenics is all about relative strength: strength compared to your bodyweight."
+  },
+  {
+    id: "activity",
+    title: "What best describes your usual day?",
+    type: "choice",
+    name: "activity",
+    options: [
+      { label: "Sitting all day", value: "sitting-all-day" },
+      { label: "On feet sometimes", value: "light-movement" },
+      { label: "Works out 3–4x/week", value: "works-out" },
+      { label: "Athlete / very active", value: "athlete" }
+    ],
+    required: true,
+    help: "This helps decide how many days per week your 30‑day plan should use."
+  },
+  {
+    id: "main-goal",
+    title: "What’s your primary goal?",
+    type: "choice",
+    name: "main_goal",
+    options: [
+      { label: "Strength & skills", value: "strength" },
+      { label: "Muscle & aesthetics", value: "hypertrophy" },
+      { label: "Weight loss & health", value: "weight-loss" }
+    ],
+    required: true,
+    help: "Focusing on one main goal allows for a more effective 30-day program."
+  },
+  // Branching for Strength
+  {
+    id: "experience",
+    title: "Calisthenics experience level?",
+    type: "choice",
+    name: "experience",
+    options: [
+      { label: "Beginner – just starting", value: "beginner" },
+      { label: "Intermediate – basics solid", value: "intermediate" },
+      { label: "Advanced – skill-focused", value: "advanced" }
+    ],
+    required: true,
+    condition: (answers) => answers.main_goal === "strength" || answers.main_goal === "hypertrophy",
+    help: "This determines which skill progressions we'll include."
+  },
+  {
+    id: "pushups",
+    title: "Max push‑ups in a row?",
+    type: "choice",
+    name: "pushups",
+    options: [
+      { label: "0", value: "0" },
+      { label: "1–5", value: "1-5" },
+      { label: "6–10", value: "6-10" },
+      { label: "11–20", value: "11-20" },
+      { label: "21–30", value: "21-30" },
+      { label: "30+", value: "30+" }
+    ],
+    required: true,
+    condition: (answers) => answers.main_goal === "strength",
+    help: "Full range of motion reps only."
+  },
+  {
+    id: "pullups",
+    title: "Max pull‑ups in a row?",
+    type: "choice",
+    name: "pullups",
+    options: [
+      { label: "0", value: "0" },
+      { label: "1–5", value: "1-5" },
+      { label: "6–10", value: "6-10" },
+      { label: "11–20", value: "11-20" },
+      { label: "21–30", value: "21-30" },
+      { label: "30+", value: "30+" }
+    ],
+    required: true,
+    condition: (answers) => answers.main_goal === "strength",
+    help: "Strict reps, no kipping."
+  },
+  {
+    id: "planche-level",
+    title: "Planche experience?",
+    type: "choice",
+    name: "planche_level",
+    options: [
+      { label: "None", value: "0" },
+      { label: "Planche Leans", value: "1" },
+      { label: "Tuck Planche", value: "2" },
+      { label: "Advanced Tuck", value: "3" },
+      { label: "Straddle", value: "4" }
+    ],
+    required: true,
+    condition: (answers) => (answers.main_goal === "strength" || answers.main_goal === "hypertrophy") && answers.experience !== "beginner",
+    help: "Select your current highest static hold for Planche."
+  },
+  {
+    id: "front-lever-level",
+    title: "Front Lever experience?",
+    type: "choice",
+    name: "front_lever_level",
+    options: [
+      { label: "None", value: "0" },
+      { label: "Tuck Front Lever", value: "1" },
+      { label: "Advanced Tuck", value: "2" },
+      { label: "Straddle", value: "3" },
+      { label: "Full Front Lever", value: "4" }
+    ],
+    required: true,
+    condition: (answers) => (answers.main_goal === "strength" || answers.main_goal === "hypertrophy") && answers.experience !== "beginner",
+    help: "Select your current highest static hold for Front Lever."
+  },
+  {
+    id: "dragon-flag-level",
+    title: "Dragon Flag experience?",
+    type: "choice",
+    name: "dragon_flag_level",
+    options: [
+      { label: "None", value: "0" },
+      { label: "Leg Raises", value: "1" },
+      { label: "Dragon Flag Negatives", value: "2" },
+      { label: "Full Dragon Flag", value: "3" }
+    ],
+    required: true,
+    condition: (answers) => (answers.main_goal === "strength" || answers.main_goal === "hypertrophy") && answers.experience !== "beginner",
+    help: "Select your current proficiency with the Dragon Flag."
+  },
+  {
+    id: "hspu-level",
+    title: "Handstand Push‑up level?",
+    type: "choice",
+    name: "hspu_level",
+    options: [
+      { label: "None", value: "0" },
+      { label: "Pike Push-ups", value: "1" },
+      { label: "Elevated Pike", value: "2" },
+      { label: "Wall HSPU", value: "3" },
+      { label: "Free HSPU", value: "4" }
+    ],
+    required: true,
+    condition: (answers) => (answers.main_goal === "strength" || answers.main_goal === "hypertrophy") && answers.experience !== "beginner",
+    help: "Select your current proficiency with vertical pushing."
+  },
+  // Branching for Weight Loss
+  {
+    id: "cardio-pref",
+    title: "What's your cardio preference?",
+    type: "choice",
+    name: "cardio_preference",
+    options: [
+      { label: "Running / Walking", value: "running" },
+      { label: "HIIT Circuits", value: "hiit" },
+      { label: "Jump Rope", value: "jump-rope" },
+      { label: "Low Impact", value: "low-impact" }
+    ],
+    required: true,
+    condition: (answers) => answers.main_goal === "weight-loss",
+    help: "We'll blend this with your strength work."
+  },
+  // Equipment for Muscle Gain
+  {
+    id: "equipment",
+    title: "What equipment do you have?",
+    type: "choice-multiple",
+    name: "equipment",
+    options: [
+      { label: "Pull-up Bar", value: "pullup-bar" },
+      { label: "Dip Station / P-Bars", value: "dips" },
+      { label: "Gymnastic Rings", value: "rings" },
+      { label: "Resistance Bands", value: "bands" },
+      { label: "None (Bodyweight only)", value: "none" }
+    ],
+    required: true,
+    condition: (answers) => answers.main_goal === "hypertrophy",
+    help: "More equipment allows for more varied hypertrophy exercises."
+  },
+];
 
-function parseNumber(input) {
-  if (input === "skip" || input === "" || input == null) return 0;
-  if (typeof input === "string" && input.includes("-")) {
-    const [low, high] = input.split("-").map((v) => Number(v));
-    if (Number.isFinite(low) && Number.isFinite(high)) {
-      return (low + high) / 2;
+class WizardController {
+  constructor() {
+    this.currentStepIndex = 0;
+    this.answers = {};
+    this.visibleQuestions = [];
+
+    this.container = document.getElementById("question-container");
+    this.progressContainer = document.getElementById("wizard-progress");
+    this.prevBtn = document.getElementById("prev-btn");
+    this.nextBtn = document.getElementById("next-btn");
+    this.submitBtn = document.getElementById("submit-btn");
+
+    this.init();
+  }
+
+  init() {
+    this.updateVisibleQuestions();
+    this.renderStep();
+
+    this.prevBtn.onclick = () => this.prev();
+    this.nextBtn.onclick = () => this.next();
+  }
+
+  updateVisibleQuestions() {
+    this.visibleQuestions = QUESTIONS.filter(q => {
+      if (!q.condition) return true;
+      return q.condition(this.answers);
+    });
+  }
+
+  renderStep() {
+    const question = this.visibleQuestions[this.currentStepIndex];
+    if (!question) return;
+
+    this.container.innerHTML = "";
+
+    const questionEl = document.createElement("div");
+    questionEl.className = "question";
+
+    const title = document.createElement("h3");
+    title.className = "question-title";
+    title.textContent = question.title;
+    questionEl.appendChild(title);
+
+    const inputContainer = document.createElement("div");
+    inputContainer.className = "input-container";
+
+    if (question.type === "text") {
+      const input = document.createElement("input");
+      input.type = "text";
+      input.name = question.name;
+      input.value = this.answers[question.name] || "";
+      input.placeholder = "Enter here...";
+      input.setAttribute("aria-label", question.title);
+      inputContainer.appendChild(input);
+
+      input.addEventListener("input", (e) => {
+        this.answers[question.name] = e.target.value;
+        this.clearError();
+      });
+    }
+    else if (question.type === "number-slider") {
+      const sliderContainer = document.createElement("div");
+      sliderContainer.className = "number-with-slider";
+
+      const numInput = document.createElement("input");
+      numInput.type = "number";
+      numInput.name = question.name;
+      numInput.min = question.min;
+      numInput.max = question.max;
+      numInput.value = this.answers[question.name] || Math.floor((question.min + question.max) / 2);
+
+      const rangeInput = document.createElement("input");
+      rangeInput.type = "range";
+      rangeInput.min = question.min;
+      rangeInput.max = question.max;
+      rangeInput.value = numInput.value;
+      rangeInput.setAttribute("aria-label", `${question.title} slider`);
+
+      sliderContainer.appendChild(numInput);
+      sliderContainer.appendChild(rangeInput);
+      inputContainer.appendChild(sliderContainer);
+
+      this.answers[question.name] = numInput.value;
+
+      rangeInput.addEventListener("input", (e) => {
+        numInput.value = e.target.value;
+        this.answers[question.name] = e.target.value;
+      });
+
+      numInput.addEventListener("input", (e) => {
+        rangeInput.value = e.target.value;
+        this.answers[question.name] = e.target.value;
+      });
+    }
+    else if (question.type === "choice" || question.type === "choice-multiple") {
+      const choiceRow = document.createElement("div");
+      choiceRow.className = "choice-row";
+
+      question.options.forEach(opt => {
+        const label = document.createElement("label");
+        label.className = "choice-chip";
+
+        const input = document.createElement("input");
+        input.type = question.type === "choice" ? "radio" : "checkbox";
+        input.name = question.name;
+        input.value = opt.value;
+
+        if (question.type === "choice") {
+          if (this.answers[question.name] === opt.value) {
+            label.classList.add("selected");
+            input.checked = true;
+          }
+        } else {
+          const vals = this.answers[question.name] || [];
+          if (vals.includes(opt.value)) {
+            label.classList.add("selected");
+            input.checked = true;
+          }
+        }
+
+        const span = document.createElement("span");
+        span.textContent = opt.label;
+
+        label.appendChild(input);
+        label.appendChild(span);
+        choiceRow.appendChild(label);
+
+        label.addEventListener("click", (e) => {
+          if (question.type === "choice") {
+            this.answers[question.name] = opt.value;
+            this.container.querySelectorAll(".choice-chip").forEach(c => c.classList.remove("selected"));
+            label.classList.add("selected");
+          } else {
+            let vals = this.answers[question.name] || [];
+            if (input.checked) {
+              if (!vals.includes(opt.value)) vals.push(opt.value);
+            } else {
+              vals = vals.filter(v => v !== opt.value);
+            }
+            this.answers[question.name] = vals;
+            label.classList.toggle("selected", input.checked);
+          }
+          this.clearError();
+          this.updateVisibleQuestions();
+          this.updateNav();
+        });
+      });
+      inputContainer.appendChild(choiceRow);
+    }
+
+    questionEl.appendChild(inputContainer);
+
+    const errorEl = document.createElement("div");
+    errorEl.className = "error-message";
+    errorEl.id = "error-message";
+    questionEl.appendChild(errorEl);
+
+    const help = document.createElement("p");
+    help.className = "question-help";
+    help.textContent = question.help;
+    questionEl.appendChild(help);
+
+    this.container.appendChild(questionEl);
+
+    const firstInput = questionEl.querySelector("input");
+    if (firstInput) firstInput.focus();
+
+    this.renderProgress();
+    this.updateNav();
+  }
+
+  renderProgress() {
+    this.progressContainer.innerHTML = "";
+    this.visibleQuestions.forEach((_, i) => {
+      const dot = document.createElement("div");
+      dot.className = `wizard-dot ${i === this.currentStepIndex ? 'active' : ''}`;
+      this.progressContainer.appendChild(dot);
+    });
+  }
+
+  updateNav() {
+    this.prevBtn.disabled = this.currentStepIndex === 0;
+    const isLast = this.currentStepIndex === this.visibleQuestions.length - 1;
+    this.nextBtn.classList.remove("hidden");
+    this.submitBtn.classList.add("hidden");
+    if (isLast) {
+        this.nextBtn.classList.add("hidden");
+        this.submitBtn.classList.remove("hidden");
     }
   }
-  const n = Number(input);
-  return Number.isFinite(n) && n >= 0 ? n : 0;
+
+  validate() {
+    const question = this.visibleQuestions[this.currentStepIndex];
+    const val = this.answers[question.name];
+
+    if (question.required) {
+      if (!val || (Array.isArray(val) && val.length === 0)) {
+        this.showError(`${question.title} is required`);
+        return false;
+      }
+    }
+
+    if (question.type === "number-slider") {
+      const num = Number(val);
+      // Hard limits logic
+      if (question.name === "weight") {
+        if (num < 20 || num > 250) {
+            this.showError("Please enter a realistic body weight (20kg–250kg)");
+            return false;
+        }
+      }
+      if (num < question.min || num > question.max) {
+        this.showError(`Please enter a value between ${question.min}–${question.max}`);
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  showError(msg) {
+    const err = document.getElementById("error-message");
+    if (err) err.textContent = msg;
+  }
+
+  clearError() {
+    const err = document.getElementById("error-message");
+    if (err) err.textContent = "";
+  }
+
+  next() {
+    if (this.validate()) {
+      this.updateVisibleQuestions();
+      if (this.currentStepIndex < this.visibleQuestions.length - 1) {
+        this.currentStepIndex++;
+        this.renderStep();
+      }
+    }
+  }
+
+  prev() {
+    if (this.currentStepIndex > 0) {
+      this.currentStepIndex--;
+      this.renderStep();
+    }
+  }
 }
 
-function experienceRank(exp) {
-  if (exp === "beginner") return 1;
-  if (exp === "intermediate") return 2;
-  if (exp === "advanced") return 3;
-  if (exp === "professional") return 4;
-  return 0;
+let wizardInstance;
+let selectedLibraryWorkout = null;
+
+document.addEventListener("DOMContentLoaded", () => {
+  const getStartedBtn = document.getElementById("get-started-btn");
+  const heroSection = document.getElementById("hero-section");
+  const dashboardSection = document.getElementById("dashboard-section");
+  const intakeCard = document.getElementById("intake-card");
+  const start30dayBtn = document.getElementById("start-30day-btn");
+  const recalculateBtn = document.getElementById("recalculate-btn");
+  const backToDashboard = document.getElementById("back-to-dashboard");
+  const libraryGrid = document.getElementById("workout-library");
+  const levelModal = document.getElementById("level-modal");
+  const closeLevelModal = document.getElementById("close-level-modal");
+
+  if (getStartedBtn) {
+    getStartedBtn.addEventListener("click", () => {
+      heroSection.classList.add("hidden");
+      const savedPlan = localStorage.getItem("thx_plan");
+      if (savedPlan) {
+        dashboardSection.classList.remove("hidden");
+        updateDashboardProgress();
+      } else {
+        intakeCard.classList.remove("hidden");
+        if (!wizardInstance) {
+          wizardInstance = new WizardController();
+        }
+      }
+    });
+  }
+
+  if (recalculateBtn) {
+    recalculateBtn.onclick = () => {
+      if (confirm("Restart and recalculate your 30-day program? Progress will be saved.")) {
+        localStorage.removeItem("thx_plan");
+        localStorage.removeItem("thx_answers");
+        dashboardSection.classList.add("hidden");
+        intakeCard.classList.remove("hidden");
+        if (wizardInstance) {
+            wizardInstance.currentStepIndex = 0;
+            wizardInstance.answers = {};
+            wizardInstance.renderStep();
+        } else {
+            wizardInstance = new WizardController();
+        }
+      }
+    };
+  }
+
+  if (start30dayBtn) {
+    start30dayBtn.addEventListener("click", () => {
+      const savedPlan = localStorage.getItem("thx_plan");
+      if (savedPlan) {
+        showPlanSection();
+      } else {
+        dashboardSection.classList.add("hidden");
+        intakeCard.classList.remove("hidden");
+        if (!wizardInstance) {
+          wizardInstance = new WizardController();
+        }
+      }
+    });
+  }
+
+  if (backToDashboard) {
+    backToDashboard.addEventListener("click", () => {
+      document.getElementById("plan-section").classList.add("hidden");
+      dashboardSection.classList.remove("hidden");
+      updateDashboardProgress();
+    });
+  }
+
+  // Populate Library
+  Object.keys(EXCLUSIVE_WORKOUTS).forEach(name => {
+    const card = document.createElement("div");
+    card.className = "library-item";
+    card.innerHTML = `
+      <div class="item-info">
+        <h4>${name}</h4>
+      </div>
+      <div class="item-action">
+        <button type="button" class="action-btn">View</button>
+      </div>
+    `;
+    card.onclick = () => {
+      selectedLibraryWorkout = name;
+      levelModal.classList.remove("hidden");
+    };
+    libraryGrid.appendChild(card);
+  });
+
+  if (closeLevelModal) {
+    closeLevelModal.onclick = () => levelModal.classList.add("hidden");
+  }
+
+  document.querySelectorAll(".level-btn").forEach(btn => {
+    btn.onclick = () => {
+      const level = btn.getAttribute("data-level");
+      levelModal.classList.add("hidden");
+      dashboardSection.classList.add("hidden");
+      showLibraryWorkout(selectedLibraryWorkout, level);
+    };
+  });
+
+  const form = document.getElementById("intake-form");
+  if (form) {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const planSection = document.getElementById("plan-section");
+      const loading = document.getElementById("plan-loading");
+      const content = document.getElementById("plan-content");
+
+      intakeCard.classList.add("hidden");
+      planSection.classList.remove("hidden");
+      loading.classList.remove("hidden");
+      content.classList.add("hidden");
+
+      setTimeout(() => {
+        const plan = generate30DayPlan(wizardInstance.answers);
+        localStorage.setItem("thx_plan", JSON.stringify(plan));
+        localStorage.setItem("thx_answers", JSON.stringify(wizardInstance.answers));
+        loading.classList.add("hidden");
+        content.classList.remove("hidden");
+        displayPlan(plan, wizardInstance.answers);
+      }, 2000);
+    });
+  }
+});
+
+function showPlanSection() {
+  const dashboardSection = document.getElementById("dashboard-section");
+  const planSection = document.getElementById("plan-section");
+  dashboardSection.classList.add("hidden");
+  planSection.classList.remove("hidden");
+  const plan = JSON.parse(localStorage.getItem("thx_plan"));
+  const answers = JSON.parse(localStorage.getItem("thx_answers"));
+  displayPlan(plan, answers);
 }
 
-function build30DayPlan(formData) {
-  const name = formData.get("name") || "Athlete";
-  const experience = formData.get("experience");
-  const activity = formData.get("activity");
-  const goals = formData.getAll("goal");
-
-  const pushups = parseNumber(formData.get("pushups"));
-  const pullups = parseNumber(formData.get("pullups"));
-  const dips = parseNumber(formData.get("dips"));
-  const squats = parseNumber(formData.get("squats"));
-
-  const weighted = formData.get("weighted");
-
-  // Rough difficulty multiplier
-  const baseDifficultyMap = {
-    beginner: 0.5,
-    intermediate: 0.8,
-    advanced: 1.0,
-    professional: 1.1,
-  };
-  const activityBonusMap = {
-    "sitting-all-day": 0.8,
-    "light-movement": 0.9,
-    "works-out": 1.0,
-    athlete: 1.05,
+function showLibraryWorkout(name, level) {
+  const workout = {
+    type: name,
+    exercises: EXCLUSIVE_WORKOUTS[name][level].map(e => ({
+      ...e,
+      rest: "60 sec"
+    }))
   };
 
-  const base =
-    (baseDifficultyMap[experience] || 0.7) *
-    (activityBonusMap[activity] || 1.0);
+  // Reuse the modal for the library workout
+  openWorkoutModal(workout, "Library");
+}
 
-  const volumeIncrease =
-    experience === "beginner"
-      ? 0.4
-      : experience === "intermediate"
-      ? 0.35
-      : experience === "advanced"
-      ? 0.3
-      : 0.25; // professional
+document.getElementById("close-library-workout").onclick = () => {
+  document.getElementById("library-workout-view").classList.add("hidden");
+  document.getElementById("calendar-view").classList.remove("hidden");
+  document.getElementById("plan-section").classList.add("hidden");
+  document.getElementById("dashboard-section").classList.remove("hidden");
+};
 
-  const endPushups = Math.round(pushups * (1 + volumeIncrease));
-  const endPullups = Math.round(pullups * (1 + volumeIncrease));
-  const endDips = Math.round(dips * (1 + volumeIncrease));
-  const endSquats = Math.round(squats * (1 + volumeIncrease + 0.1));
+function displayPlan(plan, answers) {
+  const intro = document.getElementById("plan-intro");
+  const calendar = document.getElementById("calendar-view");
+  const libraryView = document.getElementById("library-workout-view");
 
-  const targetPushups = clamp(endPushups || 15, 10, 60);
-  const targetPullups = clamp(endPullups || 6, 3, 25);
-  const targetDips = clamp(endDips || 10, 5, 40);
-  const targetSquats = clamp(endSquats || 40, 30, 200);
+  calendar.classList.remove("hidden");
+  libraryView.classList.add("hidden");
 
-  const daysPerWeek =
-    activity === "sitting-all-day"
-      ? 3
-      : activity === "light-movement"
-      ? 4
-      : activity === "works-out"
-      ? 5
-      : 6;
+  intro.textContent = `Hello ${answers.name}, here is your custom 30-day ${answers.main_goal} plan. Each week intensity increases.`;
+  calendar.innerHTML = "";
+  const completedWorkouts = JSON.parse(localStorage.getItem("thx_completed") || "{}");
 
-  const planSummary = [];
-  planSummary.push(
-    `Aim to train **${daysPerWeek} days per week** for the next 30 days.`
-  );
-  planSummary.push(
-    `Build up to a solid set of **${targetPushups} push‑ups**, **${targetPullups} pull‑ups**, **${targetDips} dips**, and **${targetSquats} squats** by day 30.`
-  );
+  plan.forEach(week => {
+    week.workouts.forEach(workout => {
+      const dayNum = workout.day;
+      const dayCard = document.createElement("div");
+      dayCard.className = `day-card ${workout.type === "Rest" ? "rest" : ""}`;
+      if (completedWorkouts[dayNum]) dayCard.classList.add("completed");
+      dayCard.innerHTML = `
+        <div class="day-num">Day ${dayNum}</div>
+        <div class="day-type">${workout.type}</div>
+      `;
+      if (workout.type !== "Rest") {
+        dayCard.onclick = () => openWorkoutModal(workout, dayNum);
+      }
+      calendar.appendChild(dayCard);
+    });
+  });
+}
 
-  if (goals.includes("strength")) {
-    planSummary.push(
-      "Prioritize lower reps with higher difficulty progressions (e.g. harder leverages, slower tempo)."
-    );
-  }
-  if (goals.includes("hypertrophy")) {
-    planSummary.push(
-      "Use moderate reps (6–15) and 2–4 working sets per exercise focusing on controlled tempo."
-    );
-  }
-  if (goals.includes("endurance")) {
-    planSummary.push(
-      "Emphasize longer sets, EMOMs, and cumulative volume while keeping reps away from failure."
-    );
-  }
-  if (goals.includes("weight-loss")) {
-    planSummary.push(
-      "Include short conditioning finishers (circuits / intervals) on most training days and keep rest periods tight."
-    );
-  }
+let currentExerciseIndex = 0;
+let restTimerInterval = null;
 
-  const weeklyStructure = [];
-  if (daysPerWeek === 3) {
-    weeklyStructure.push(
-      "3x/week full‑body sessions: push, pull, legs, core in each workout."
-    );
-  } else if (daysPerWeek === 4) {
-    weeklyStructure.push(
-      "Upper / lower split repeated 2x each week with core on every session."
-    );
-  } else if (daysPerWeek === 5) {
-    weeklyStructure.push(
-      "2 push, 2 pull, 1 leg‑dominant day with skill and core baked into each."
-    );
-  } else {
-    weeklyStructure.push(
-      "6x/week: 3 strength‑focused days + 2 skill‑focused days + 1 lighter conditioning day."
-    );
-  }
+function openWorkoutModal(workout, dayNum) {
+  currentExerciseIndex = 0;
+  const modal = document.getElementById("workout-modal");
+  const title = document.getElementById("modal-title");
+  title.textContent = `Day ${dayNum} - ${workout.type}`;
 
-  // Skill focus
-  const skillFocus = [];
-  const addSkill = (label, suggestion) => {
-    skillFocus.push({ label, suggestion });
-  };
+  const results = [];
+  renderExerciseStep(workout, dayNum, results);
+  modal.classList.remove("hidden");
+}
 
-  if (experience === "beginner") {
-    addSkill(
-      "Fundamentals",
-      "Nail basic push‑ups, rows, bodyweight squats, and hollow body holds with perfect form."
-    );
-    addSkill(
-      "Core",
-      "Accumulate 3–5 sets of hollow/arch holds and plank variations each session."
-    );
-  }
+function renderExerciseStep(workout, dayNum, results) {
+  const exerciseContainer = document.getElementById("modal-exercises");
+  const saveBtn = document.getElementById("save-workout");
+  const ex = workout.exercises[currentExerciseIndex];
 
-  if (experience === "intermediate" || experience === "advanced" || experience === "professional") {
-    const hspu = parseNumber(formData.get("hspu"));
-    const backLever = parseNumber(formData.get("backLever"));
-    const dragonFlag = parseNumber(formData.get("dragonFlag"));
-    const planche = parseNumber(formData.get("planche"));
-    const frontLever = parseNumber(formData.get("frontLever"));
-    const maltese = parseNumber(formData.get("maltese"));
-    const oap = parseNumber(formData.get("oap"));
-    const impossibleDip = parseNumber(formData.get("impossibleDip"));
+  exerciseContainer.innerHTML = "";
+  saveBtn.classList.add("hidden");
 
-    if (hspu > 0) {
-      addSkill(
-        "Handstand push‑ups",
-        `Progress from your current best of ${hspu} reps towards sets of ${hspu + 1}-${hspu + 3} with clean form by day 30.`
-      );
+  const stepEl = document.createElement("div");
+  stepEl.className = "exercise-step";
+  stepEl.innerHTML = `
+    <div class="exercise-preview"><div class="preview-animation"></div></div>
+    <div class="exercise-info-large">
+      <h3>${ex.name}</h3>
+      <p class="target-text">Target: ${ex.sets} x ${ex.reps}</p>
+      <p class="rest-hint">Rest after: ${ex.rest || '60 sec'}</p>
+    </div>
+    <div class="step-inputs">
+      <div class="input-group">
+        <label>Sets Done</label>
+        <input type="number" class="sets-done" value="${ex.sets}">
+      </div>
+      <div class="input-group">
+        <label>Reps Done</label>
+        <input type="text" class="reps-done" value="${ex.reps}">
+      </div>
+    </div>
+    <button type="button" class="primary-btn complete-step-btn">Complete & Rest</button>
+  `;
+
+  exerciseContainer.appendChild(stepEl);
+
+  const firstInput = stepEl.querySelector("input");
+  if (firstInput) firstInput.focus();
+
+  stepEl.querySelector(".complete-step-btn").onclick = () => {
+    results.push({
+      name: ex.name,
+      sets: stepEl.querySelector(".sets-done").value,
+      reps: stepEl.querySelector(".reps-done").value
+    });
+
+    if (currentExerciseIndex < workout.exercises.length - 1) {
+      startRest(ex.rest || "60 sec", () => {
+        currentExerciseIndex++;
+        renderExerciseStep(workout, dayNum, results);
+      });
     } else {
-      addSkill(
-        "Handstand strength",
-        "Work 2–3x/week on wall handstand holds and partial range handstand push‑ups."
-      );
+      renderFinalSummary(workout, dayNum, results);
     }
+  };
+}
 
-    if (backLever > 0) {
-      addSkill(
-        "Back lever",
-        `Extend your back lever hold from ${backLever}s to about ${backLever + 5}-${backLever + 10}s using tuck/advanced tuck work and isometrics.`
-      );
+function startRest(durationStr, callback) {
+  const exerciseContainer = document.getElementById("modal-exercises");
+  exerciseContainer.innerHTML = "";
+
+  let seconds = parseInt(durationStr) || 60;
+  if (durationStr.includes("min")) seconds = parseInt(durationStr) * 60;
+
+  const restEl = document.createElement("div");
+  restEl.className = "rest-step";
+  restEl.innerHTML = `
+    <div class="rest-timer-circle">
+      <span id="timer-countdown">${seconds}</span>
+    </div>
+    <h3>Rest Time</h3>
+    <p>Prepare for the next exercise</p>
+    <button type="button" class="secondary-btn" id="skip-rest">Skip Rest</button>
+  `;
+  exerciseContainer.appendChild(restEl);
+
+  const skipBtn = document.getElementById("skip-rest");
+  if (skipBtn) skipBtn.focus();
+
+  const countdown = document.getElementById("timer-countdown");
+  restTimerInterval = setInterval(() => {
+    seconds--;
+    countdown.textContent = seconds;
+    if (seconds <= 0) {
+      clearInterval(restTimerInterval);
+      callback();
     }
+  }, 1000);
 
-    if (dragonFlag > 0) {
-      addSkill(
-        "Dragon flag",
-        `Turn your ${dragonFlag} reps into stronger, slower negatives and aim for ${dragonFlag + 2}-${dragonFlag + 4} strict reps.`
-      );
-    }
+  document.getElementById("skip-rest").onclick = () => {
+    clearInterval(restTimerInterval);
+    callback();
+  };
+}
 
-    if (experience === "advanced" || experience === "professional") {
-      if (planche > 0) {
-        addSkill(
-          "Planche",
-          `Maintain your ${planche}s planche and aim for a ${planche + 3}-${planche + 5}s clean hold with controlled entry.`
-        );
-      } else {
-        addSkill(
-          "Planche prep",
-          "Use planche leans and tuck/advanced‑tuck planche holds 2–3x/week, never to absolute failure."
-        );
-      }
+function renderFinalSummary(workout, dayNum, results) {
+  const exerciseContainer = document.getElementById("modal-exercises");
+  const saveBtn = document.getElementById("save-workout");
 
-      if (frontLever > 0) {
-        addSkill(
-          "Front lever",
-          `Push your ${frontLever}s hold towards ${frontLever + 5}-${frontLever + 10}s via isometric sets and easier lever variations between max attempts.`
-        );
-      } else {
-        addSkill(
-          "Front lever prep",
-          "Train tuck/advanced‑tuck and band‑assisted front lever holds twice per week."
-        );
-      }
-    }
+  exerciseContainer.innerHTML = `
+    <div class="workout-summary">
+      <h3>Workout Complete!</h3>
+      <p>Great job on Day ${dayNum}.</p>
+      <div class="summary-list">
+        ${results.map(r => `<div class="summary-item"><strong>${r.name}</strong>: ${r.sets}x${r.reps}</div>`).join('')}
+      </div>
+    </div>
+  `;
 
-    if (experience === "professional") {
-      if (maltese > 0) {
-        addSkill(
-          "Maltese",
-          `Consolidate your maltese with isometrics and support holds, aiming to add ${3}-${5}s to your current ${maltese}s hold.`
-        );
-      }
-
-      if (oap > 0) {
-        addSkill(
-          "One‑arm pull‑up",
-          `Keep your one‑arm pull‑ups sharp with singles/doubles and add a small amount of clean volume (~${oap * 2} total reps per week).`
-        );
-      }
-
-      if (impossibleDip > 0) {
-        addSkill(
-          "Impossible dips",
-          `Maintain joint health with careful warm‑ups and keep total weekly volume moderate (≈${impossibleDip * 2}-${impossibleDip * 3} reps).`
-        );
-      }
-    }
-
-    if (weighted === "yes") {
-      addSkill(
-        "Weighted work",
-        "Use weighted pull‑ups, dips, and squats 1–2x/week, keeping 2–3 reps in reserve to avoid overuse while skills also progress."
-      );
-    } else if (
-      (experience === "advanced" || experience === "professional") &&
-      weighted !== "yes"
-    ) {
-      addSkill(
-        "Optional weighted intro",
-        "Consider adding light weighted pull‑ups and dips once per week to support strength without compromising skill quality."
-      );
-    }
-  }
-
-  return {
-    intro: `${name}, here’s a realistic 30‑day calisthenics focus based on your current level.`,
-    planSummary,
-    weeklyStructure,
-    skillFocus,
+  saveBtn.classList.remove("hidden");
+  saveBtn.focus();
+  saveBtn.onclick = () => {
+    const completed = JSON.parse(localStorage.getItem("thx_completed") || "{}");
+    completed[dayNum] = {
+      timestamp: new Date().getTime(),
+      exercises: results
+    };
+    localStorage.setItem("thx_completed", JSON.stringify(completed));
+    document.getElementById("workout-modal").classList.add("hidden");
+    const plan = JSON.parse(localStorage.getItem("thx_plan"));
+    const answers = JSON.parse(localStorage.getItem("thx_answers"));
+    displayPlan(plan, answers);
+    updateDashboardProgress();
   };
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  const googleLoginCard = document.getElementById("google-login-card");
-  const intakeCard = document.getElementById("intake-card");
-  const googleLoginBtn = document.getElementById("google-login-btn");
-  const form = document.getElementById("intake-form");
-  const planSection = document.getElementById("plan-section");
-  const planIntro = document.getElementById("plan-intro");
-  const planSummaryList = document.getElementById("plan-summary");
-  const weeklyStructureList = document.getElementById("weekly-structure");
-  const skillFocusList = document.getElementById("skill-focus");
-  const questions = Array.from(
-    document.querySelectorAll(".wizard-questions .question")
-  );
-  const progressContainer = document.getElementById("wizard-progress");
-  const prevBtn = document.getElementById("prev-btn");
-  const nextBtn = document.getElementById("next-btn");
-  const submitBtn = document.getElementById("submit-btn");
-  const ageInput = document.getElementById("age-input");
-  const ageSlider = document.getElementById("age-slider");
-  const heightInput = document.getElementById("height-input");
-  const heightSlider = document.getElementById("height-slider");
-  const weightInput = document.getElementById("weight-input");
-  const weightSlider = document.getElementById("weight-slider");
-  const backLeverInput = document.getElementById("backLever-input");
-  const backLeverSlider = document.getElementById("backLever-slider");
-  const plancheInput = document.getElementById("planche-input");
-  const plancheSlider = document.getElementById("planche-slider");
-  const frontLeverInput = document.getElementById("frontLever-input");
-  const frontLeverSlider = document.getElementById("frontLever-slider");
-  const malteseInput = document.getElementById("maltese-input");
-  const malteseSlider = document.getElementById("maltese-slider");
-
-  let currentStepIndex = 0;
-
-  if (googleLoginBtn && googleLoginCard && intakeCard) {
-    googleLoginBtn.addEventListener("click", () => {
-      // Simulate a successful Google login on click
-      googleLoginCard.classList.add("hidden");
-      intakeCard.classList.remove("hidden");
-      intakeCard.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+  const closeModal = document.getElementById("close-modal");
+  if (closeModal) {
+    closeModal.onclick = () => {
+      document.getElementById("workout-modal").classList.add("hidden");
+    };
   }
 
-  // Sync age, height and weight inputs with sliders
-  if (ageInput && ageSlider) {
-    ageSlider.addEventListener("input", () => {
-      ageInput.value = ageSlider.value;
-    });
-    ageInput.addEventListener("input", () => {
-      const v = Number(ageInput.value);
-      if (Number.isFinite(v)) {
-        ageSlider.value = clamp(v, Number(ageSlider.min), Number(ageSlider.max));
-      }
-    });
+  const savedPlan = localStorage.getItem("thx_plan");
+  const savedAnswers = localStorage.getItem("thx_answers");
+
+  if (savedPlan && savedAnswers) {
+    document.getElementById("hero-section").classList.add("hidden");
+    document.getElementById("dashboard-section").classList.remove("hidden");
+    updateDashboardProgress();
   }
-
-  if (heightInput && heightSlider) {
-    heightSlider.addEventListener("input", () => {
-      heightInput.value = heightSlider.value;
-    });
-    heightInput.addEventListener("input", () => {
-      const v = Number(heightInput.value);
-      if (Number.isFinite(v)) {
-        heightSlider.value = clamp(v, Number(heightSlider.min), Number(heightSlider.max));
-      }
-    });
-  }
-
-  if (weightInput && weightSlider) {
-    weightSlider.addEventListener("input", () => {
-      weightInput.value = weightSlider.value;
-    });
-    weightInput.addEventListener("input", () => {
-      const v = Number(weightInput.value);
-      if (Number.isFinite(v)) {
-        weightSlider.value = clamp(v, Number(weightSlider.min), Number(weightSlider.max));
-      }
-    });
-  }
-
-  if (backLeverInput && backLeverSlider) {
-    backLeverSlider.addEventListener("input", () => {
-      backLeverInput.value = backLeverSlider.value;
-    });
-    backLeverInput.addEventListener("input", () => {
-      const v = Number(backLeverInput.value);
-      if (Number.isFinite(v)) {
-        backLeverSlider.value = clamp(v, Number(backLeverSlider.min), Number(backLeverSlider.max));
-      }
-    });
-  }
-
-  if (plancheInput && plancheSlider) {
-    plancheSlider.addEventListener("input", () => {
-      plancheInput.value = plancheSlider.value;
-    });
-    plancheInput.addEventListener("input", () => {
-      const v = Number(plancheInput.value);
-      if (Number.isFinite(v)) {
-        plancheSlider.value = clamp(v, Number(plancheSlider.min), Number(plancheSlider.max));
-      }
-    });
-  }
-
-  if (frontLeverInput && frontLeverSlider) {
-    frontLeverSlider.addEventListener("input", () => {
-      frontLeverInput.value = frontLeverSlider.value;
-    });
-    frontLeverInput.addEventListener("input", () => {
-      const v = Number(frontLeverInput.value);
-      if (Number.isFinite(v)) {
-        frontLeverSlider.value = clamp(v, Number(frontLeverSlider.min), Number(frontLeverSlider.max));
-      }
-    });
-  }
-
-  if (malteseInput && malteseSlider) {
-    malteseSlider.addEventListener("input", () => {
-      malteseInput.value = malteseSlider.value;
-    });
-    malteseInput.addEventListener("input", () => {
-      const v = Number(malteseInput.value);
-      if (Number.isFinite(v)) {
-        malteseSlider.value = clamp(v, Number(malteseSlider.min), Number(malteseSlider.max));
-      }
-    });
-  }
-
-  function getCurrentExperience() {
-    const checked = document.querySelector('input[name="experience"]:checked');
-    return checked ? checked.value : "";
-  }
-
-  function isQuestionRelevant(question, exp) {
-    const minExp = question.getAttribute("data-min-exp");
-    if (!minExp) return true;
-    if (!exp) return false;
-    return experienceRank(exp) >= experienceRank(minExp);
-  }
-
-  function getVisibleQuestions() {
-    const exp = getCurrentExperience();
-    return questions.filter((q) => isQuestionRelevant(q, exp));
-  }
-
-  function renderProgress(visibleQuestions) {
-    progressContainer.innerHTML = "";
-    visibleQuestions.forEach((_, index) => {
-      const dot = document.createElement("div");
-      dot.className = "wizard-dot" + (index === currentStepIndex ? " active" : "");
-      progressContainer.appendChild(dot);
-    });
-  }
-
-  function goToStep(index) {
-    const visibleQuestions = getVisibleQuestions();
-    if (!visibleQuestions.length) return;
-
-    currentStepIndex = Math.max(0, Math.min(index, visibleQuestions.length - 1));
-
-    questions.forEach((q) => q.classList.remove("active"));
-    const activeQuestion = visibleQuestions[currentStepIndex];
-    if (activeQuestion) {
-      activeQuestion.classList.add("active");
-    }
-
-    renderProgress(visibleQuestions);
-
-    prevBtn.disabled = currentStepIndex === 0;
-
-    const isLast = currentStepIndex === visibleQuestions.length - 1;
-    nextBtn.classList.toggle("hidden", isLast);
-    submitBtn.classList.toggle("hidden", !isLast);
-  }
-
-  prevBtn.addEventListener("click", () => {
-    goToStep(currentStepIndex - 1);
-  });
-
-  nextBtn.addEventListener("click", () => {
-    const visibleQuestions = getVisibleQuestions();
-    const activeQuestion = visibleQuestions[currentStepIndex];
-    if (activeQuestion) {
-      const input =
-        activeQuestion.querySelector("input[required]") ||
-        activeQuestion.querySelector("select[required]");
-      if (input && !input.checkValidity()) {
-        input.reportValidity();
-        return;
-      }
-    }
-
-    goToStep(currentStepIndex + 1);
-  });
-
-  // Initialize wizard
-  goToStep(0);
-
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const formData = new FormData(form);
-
-    const plan = build30DayPlan(formData);
-
-    planIntro.textContent = plan.intro;
-
-    planSummaryList.innerHTML = "";
-    plan.planSummary.forEach((line) => {
-      const li = document.createElement("li");
-      li.innerHTML = line.replace(
-        /\*\*(.+?)\*\*/g,
-        "<span class='label'>$1</span>"
-      );
-      planSummaryList.appendChild(li);
-    });
-
-    weeklyStructureList.innerHTML = "";
-    plan.weeklyStructure.forEach((line) => {
-      const li = document.createElement("li");
-      li.textContent = line;
-      weeklyStructureList.appendChild(li);
-    });
-
-    skillFocusList.innerHTML = "";
-    plan.skillFocus.forEach((item) => {
-      const li = document.createElement("li");
-      li.innerHTML = `<span class="label">${item.label}:</span> ${item.suggestion}`;
-      skillFocusList.appendChild(li);
-    });
-
-    planSection.classList.remove("hidden");
-    planSection.scrollIntoView({ behavior: "smooth", block: "start" });
-  });
 });
 
+function updateDashboardProgress() {
+  const completed = JSON.parse(localStorage.getItem("thx_completed") || "{}");
+  const count = Object.keys(completed).length;
+  const total = 30; // 30-day program
+  const percentage = Math.round((count / total) * 100);
+
+  const container = document.getElementById("program-progress-container");
+  const fill = document.getElementById("program-progress-fill");
+  const text = document.getElementById("program-progress-text");
+  const recalculateBtn = document.getElementById("recalculate-btn");
+
+  if (container) {
+    container.classList.remove("hidden");
+    fill.style.width = `${percentage}%`;
+    text.textContent = `${percentage}% Complete`;
+  }
+  if (recalculateBtn) {
+    recalculateBtn.classList.remove("hidden");
+  }
+}
