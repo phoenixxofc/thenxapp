@@ -20,30 +20,33 @@
     </section>
 
     <main class="app-main">
-      <section id="dashboard-section" class="card hidden">
-        <div class="dashboard-header">
-          <h2>Workout Dashboard</h2>
-          <p>Choose your path to elite strength.</p>
-        </div>
-
-        <div class="program-card main-program" id="program-30day">
-          <div class="program-info">
-            <h3>30-Day Personalized Program</h3>
-            <p>A structured plan built specifically for your level and goals.</p>
-            <div id="program-progress-container" class="hidden">
-              <div class="progress-bar-bg">
-                <div id="program-progress-fill" class="progress-bar-fill"></div>
+      <section id="dashboard-section" class="dashboard-container hidden">
+        <div class="dashboard-columns">
+          <div class="dashboard-column" id="programs-column">
+            <h3 class="column-title">Programs</h3>
+            <div class="column-scroll">
+              <div class="program-item main-program" id="program-30day">
+                <div class="program-info">
+                  <h4>30-Day Journey</h4>
+                  <p>Personalized strength & skills</p>
+                  <div id="program-progress-container" class="hidden">
+                    <div class="progress-bar-bg">
+                      <div id="program-progress-fill" class="progress-bar-fill"></div>
+                    </div>
+                    <span id="program-progress-text">0%</span>
+                  </div>
+                </div>
+                <button type="button" id="start-30day-btn" class="action-btn">Start</button>
               </div>
-              <span id="program-progress-text">0% Complete</span>
+              <!-- More programs can go here -->
             </div>
           </div>
-          <button type="button" id="start-30day-btn" class="primary-btn">View My Program</button>
-        </div>
 
-        <div class="library-section">
-          <h3>Exclusive Workouts</h3>
-          <div id="workout-library" class="workout-grid">
-            <!-- Exclusive workouts cards -->
+          <div class="dashboard-column" id="workouts-column">
+            <h3 class="column-title">Workouts</h3>
+            <div id="workout-library" class="column-scroll">
+              <!-- Exclusive workouts cards will be full-width items here -->
+            </div>
           </div>
         </div>
       </section>

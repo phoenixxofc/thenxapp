@@ -508,8 +508,15 @@ document.addEventListener("DOMContentLoaded", () => {
   // Populate Library
   Object.keys(EXCLUSIVE_WORKOUTS).forEach(name => {
     const card = document.createElement("div");
-    card.className = "library-card";
-    card.innerHTML = `<h4>${name}</h4>`;
+    card.className = "library-item";
+    card.innerHTML = `
+      <div class="item-info">
+        <h4>${name}</h4>
+      </div>
+      <div class="item-action">
+        <button type="button" class="action-btn">View</button>
+      </div>
+    `;
     card.onclick = () => {
       selectedLibraryWorkout = name;
       levelModal.classList.remove("hidden");
@@ -566,32 +573,16 @@ function showPlanSection() {
 }
 
 function showLibraryWorkout(name, level) {
-  const planSection = document.getElementById("plan-section");
-  const calendar = document.getElementById("calendar-view");
-  const libraryView = document.getElementById("library-workout-view");
-  const libraryExs = document.getElementById("library-exercises");
-  const intro = document.getElementById("plan-intro");
+  const workout = {
+    type: name,
+    exercises: EXCLUSIVE_WORKOUTS[name][level].map(e => ({
+      ...e,
+      rest: "60 sec"
+    }))
+  };
 
-  planSection.classList.remove("hidden");
-  calendar.classList.add("hidden");
-  libraryView.classList.remove("hidden");
-
-  intro.textContent = `${name} - ${level.toUpperCase()}`;
-  libraryExs.innerHTML = "";
-
-  const exercises = EXCLUSIVE_WORKOUTS[name][level];
-  exercises.forEach(ex => {
-    const exEl = document.createElement("div");
-    exEl.className = "exercise-item";
-    exEl.innerHTML = `
-      <div class="exercise-preview"><div class="preview-animation"></div></div>
-      <div class="exercise-header">
-        <strong>${ex.name}</strong>
-        <span>Target: ${ex.sets}x${ex.reps}</span>
-      </div>
-    `;
-    libraryExs.appendChild(exEl);
-  });
+  // Reuse the modal for the library workout
+  openWorkoutModal(workout, "Library");
 }
 
 document.getElementById("close-library-workout").onclick = () => {
@@ -631,48 +622,140 @@ function displayPlan(plan, answers) {
   });
 }
 
+let currentExerciseIndex = 0;
+let restTimerInterval = null;
+
 function openWorkoutModal(workout, dayNum) {
+  currentExerciseIndex = 0;
   const modal = document.getElementById("workout-modal");
   const title = document.getElementById("modal-title");
+  title.textContent = `Day ${dayNum} - ${workout.type}`;
+
+  const results = [];
+  renderExerciseStep(workout, dayNum, results);
+  modal.classList.remove("hidden");
+}
+
+function renderExerciseStep(workout, dayNum, results) {
+  const exerciseContainer = document.getElementById("modal-exercises");
+  const saveBtn = document.getElementById("save-workout");
+  const ex = workout.exercises[currentExerciseIndex];
+
+  exerciseContainer.innerHTML = "";
+  saveBtn.classList.add("hidden");
+
+  const stepEl = document.createElement("div");
+  stepEl.className = "exercise-step";
+  stepEl.innerHTML = `
+    <div class="exercise-preview"><div class="preview-animation"></div></div>
+    <div class="exercise-info-large">
+      <h3>${ex.name}</h3>
+      <p class="target-text">Target: ${ex.sets} x ${ex.reps}</p>
+      <p class="rest-hint">Rest after: ${ex.rest || '60 sec'}</p>
+    </div>
+    <div class="step-inputs">
+      <div class="input-group">
+        <label>Sets Done</label>
+        <input type="number" class="sets-done" value="${ex.sets}">
+      </div>
+      <div class="input-group">
+        <label>Reps Done</label>
+        <input type="text" class="reps-done" value="${ex.reps}">
+      </div>
+    </div>
+    <button type="button" class="primary-btn complete-step-btn">Complete & Rest</button>
+  `;
+
+  exerciseContainer.appendChild(stepEl);
+
+  const firstInput = stepEl.querySelector("input");
+  if (firstInput) firstInput.focus();
+
+  stepEl.querySelector(".complete-step-btn").onclick = () => {
+    results.push({
+      name: ex.name,
+      sets: stepEl.querySelector(".sets-done").value,
+      reps: stepEl.querySelector(".reps-done").value
+    });
+
+    if (currentExerciseIndex < workout.exercises.length - 1) {
+      startRest(ex.rest || "60 sec", () => {
+        currentExerciseIndex++;
+        renderExerciseStep(workout, dayNum, results);
+      });
+    } else {
+      renderFinalSummary(workout, dayNum, results);
+    }
+  };
+}
+
+function startRest(durationStr, callback) {
+  const exerciseContainer = document.getElementById("modal-exercises");
+  exerciseContainer.innerHTML = "";
+
+  let seconds = parseInt(durationStr) || 60;
+  if (durationStr.includes("min")) seconds = parseInt(durationStr) * 60;
+
+  const restEl = document.createElement("div");
+  restEl.className = "rest-step";
+  restEl.innerHTML = `
+    <div class="rest-timer-circle">
+      <span id="timer-countdown">${seconds}</span>
+    </div>
+    <h3>Rest Time</h3>
+    <p>Prepare for the next exercise</p>
+    <button type="button" class="secondary-btn" id="skip-rest">Skip Rest</button>
+  `;
+  exerciseContainer.appendChild(restEl);
+
+  const skipBtn = document.getElementById("skip-rest");
+  if (skipBtn) skipBtn.focus();
+
+  const countdown = document.getElementById("timer-countdown");
+  restTimerInterval = setInterval(() => {
+    seconds--;
+    countdown.textContent = seconds;
+    if (seconds <= 0) {
+      clearInterval(restTimerInterval);
+      callback();
+    }
+  }, 1000);
+
+  document.getElementById("skip-rest").onclick = () => {
+    clearInterval(restTimerInterval);
+    callback();
+  };
+}
+
+function renderFinalSummary(workout, dayNum, results) {
   const exerciseContainer = document.getElementById("modal-exercises");
   const saveBtn = document.getElementById("save-workout");
 
-  title.textContent = `Day ${dayNum} - ${workout.type}`;
-  exerciseContainer.innerHTML = "";
-  workout.exercises.forEach((ex, idx) => {
-    const exEl = document.createElement("div");
-    exEl.className = "exercise-item";
-    exEl.innerHTML = `
-      <div class="exercise-preview"><div class="preview-animation"></div></div>
-      <div class="exercise-header">
-        <strong>${ex.name}</strong>
-        <span>Target: ${ex.sets}x${ex.reps}</span>
+  exerciseContainer.innerHTML = `
+    <div class="workout-summary">
+      <h3>Workout Complete!</h3>
+      <p>Great job on Day ${dayNum}.</p>
+      <div class="summary-list">
+        ${results.map(r => `<div class="summary-item"><strong>${r.name}</strong>: ${r.sets}x${r.reps}</div>`).join('')}
       </div>
-      <div class="exercise-inputs">
-        <input type="number" placeholder="Sets" class="sets-done" value="${ex.sets}">
-        <input type="text" placeholder="Reps" class="reps-done" value="${ex.reps}">
-      </div>
-    `;
-    exerciseContainer.appendChild(exEl);
-  });
+    </div>
+  `;
 
+  saveBtn.classList.remove("hidden");
+  saveBtn.focus();
   saveBtn.onclick = () => {
     const completed = JSON.parse(localStorage.getItem("thx_completed") || "{}");
     completed[dayNum] = {
       timestamp: new Date().getTime(),
-      exercises: Array.from(exerciseContainer.querySelectorAll(".exercise-item")).map(el => ({
-        name: el.querySelector("strong").textContent,
-        sets: el.querySelector(".sets-done").value,
-        reps: el.querySelector(".reps-done").value
-      }))
+      exercises: results
     };
     localStorage.setItem("thx_completed", JSON.stringify(completed));
-    modal.classList.add("hidden");
+    document.getElementById("workout-modal").classList.add("hidden");
     const plan = JSON.parse(localStorage.getItem("thx_plan"));
     const answers = JSON.parse(localStorage.getItem("thx_answers"));
     displayPlan(plan, answers);
+    updateDashboardProgress();
   };
-  modal.classList.remove("hidden");
 }
 
 document.addEventListener("DOMContentLoaded", () => {
